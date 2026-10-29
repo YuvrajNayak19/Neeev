@@ -24,7 +24,7 @@ import { LandingPage } from "./components/public/landing-page";
 import { AdminDashboardContent } from "./components/admin/admin-dashboard";
 import { SchedulePortalPage } from "./components/public/schedule-portal";
 
-const DesignSystemPage = lazy(() => import("./routes/design").then((module) => ({ default: module.DesignSystemPage })));
+const DesignSystemPage = lazy(() => import("./components/design-system/design-system-page").then((module) => ({ default: module.DesignSystemPage })));
 const AdminTimetableScreen = lazy(() => import("./components/timetable/admin-timetable-page").then((module) => ({ default: module.AdminTimetablePage })));
 
 type FeatureCard = {
@@ -122,12 +122,21 @@ function LoginPage() {
     return () => window.clearTimeout(timeout);
   }, [role, schoolQuery]);
 
-  const demo = {
-    admin: import.meta.env.VITE_DEMO_ADMIN_EMAIL as string | undefined,
-    teacher: import.meta.env.VITE_DEMO_TEACHER_EMAIL as string | undefined,
-    student: import.meta.env.VITE_DEMO_STUDENT_ID as string | undefined,
+  const demoCredentials = {
+    admin: {
+      identifier: import.meta.env.VITE_DEMO_ADMIN_EMAIL,
+      password: import.meta.env.VITE_DEMO_ADMIN_PASSWORD,
+    },
+    teacher: {
+      identifier: import.meta.env.VITE_DEMO_TEACHER_EMAIL,
+      password: import.meta.env.VITE_DEMO_TEACHER_PASSWORD,
+    },
+    student: {
+      identifier: import.meta.env.VITE_DEMO_STUDENT_ID,
+      password: import.meta.env.VITE_DEMO_STUDENT_PASSWORD,
+    },
   }[role];
-  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD as string | undefined;
+  const demoSchoolId = import.meta.env.VITE_DEMO_SCHOOL_ID;
   const roleLabel = role === "student" ? "Admission number" : "Email address";
 
   const handleRoleChange = (nextRole: AppRole) => {
@@ -149,6 +158,30 @@ function LoginPage() {
       navigate(destination, { replace: true });
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to sign in. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    if (!demoCredentials.identifier || !demoCredentials.password || (role === "student" && !demoSchoolId)) {
+      setError("Demo login is not configured. Check the VITE_DEMO_* values in .env and restart Vite.");
+      return;
+    }
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const user = await loginWithDatabase({
+        identifier: demoCredentials.identifier,
+        password: demoCredentials.password,
+        role,
+        ...(role === "student" ? { schoolId: demoSchoolId } : {}),
+      });
+      if (appRoleFromUser(user) !== role) throw new Error("The demo account does not match the selected role.");
+      const destination = role === "admin" ? "/admin/dashboard" : role === "teacher" ? "/teacher/dashboard" : "/student";
+      navigate(destination, { replace: true });
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Unable to sign in with the demo account.");
     } finally {
       setIsSubmitting(false);
     }
@@ -198,7 +231,7 @@ function LoginPage() {
             {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</> : `Sign in`}
           </button>
 
-          {demo && demoPassword ? <button type="button" onClick={() => { setIdentifier(demo); setPassword(demoPassword); }} className="w-full rounded-md border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Demo Quick Fill</button> : null}
+          {demoCredentials.identifier && demoCredentials.password ? <button type="button" disabled={isSubmitting} onClick={() => void handleDemoLogin()} className="w-full rounded-md border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">{isSubmitting ? "Opening demo..." : "Continue with demo account"}</button> : null}
           <p className="text-center text-xs text-slate-500">Ask your school admin to reset your password.</p>
           <p className="text-center text-sm text-slate-600">Setting up a school? <Link to="/register" className="font-semibold text-indigo-600 hover:underline">Register it here</Link></p>
           <Link to="/" className="block text-center text-sm font-medium text-slate-600 underline-offset-4 hover:underline">Back to home</Link>

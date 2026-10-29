@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowDown,
@@ -43,11 +42,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { CommandMenu, CoverageRing, Dialog, Drawer, MetricCard, NowNextCard, TimetableCell, Toast } from "@/components/design-system/timetable-primitives";
 import { toast } from "sonner";
-
-export const Route = createFileRoute("/design")({
-  head: () => ({ meta: [{ title: "Design system | EduSync" }] }),
-  component: DesignPage,
-});
 
 export { DesignPage as DesignSystemPage };
 
