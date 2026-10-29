@@ -206,7 +206,7 @@ authRoutes.post("/verify-otp", authRateLimit, validateBody(verifyOtpSchema), asy
     const user = await User.findOneAndUpdate(
       { schoolId: teacherInput.schoolId, email: teacherInput.email },
       { $set: { passwordHash, role: "TEACHER", status: "PENDING", emailVerifiedAt: new Date(), profile: { name: teacherInput.name } } },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { returnDocument: "after", upsert: true, setDefaultsOnInsert: true },
     );
     if (!user) return res.status(500).json({ message: "Could not create teacher account." });
     userId = user._id;
@@ -216,7 +216,7 @@ authRoutes.post("/verify-otp", authRateLimit, validateBody(verifyOtpSchema), asy
     await Teacher.findOneAndUpdate(
       { schoolId: teacherInput.schoolId, email: teacherInput.email },
       { $set: { userId: user._id, name: teacherInput.name, email: teacherInput.email, qualificationCategory: teacherInput.category, primarySubjects: teacherInput.subjects } },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { returnDocument: "after", upsert: true, setDefaultsOnInsert: true },
     );
   } else {
     return res.status(400).json({ message: "Student registration does not use email verification." });
@@ -244,7 +244,7 @@ authRoutes.patch("/admin/approvals/:id", requireAuth, requireRole("SCHOOL_ADMIN"
   const result = approvalSchema.parse(req.body);
   const target = await User.findOneAndUpdate(
     { _id: req.params.id, schoolId: req.user?.schoolId, status: "PENDING" },
-    { $set: { status: result.status } }, { new: true },
+    { $set: { status: result.status } }, { returnDocument: "after" },
   ).select("_id role status profile admissionNumber").lean();
   if (!target) return res.status(404).json({ message: "Pending account not found." });
   return res.json({ user: target });

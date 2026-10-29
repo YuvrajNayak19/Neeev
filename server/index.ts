@@ -14,6 +14,7 @@ import { timetableRoutes } from "./routes/timetable.routes";
 import { calendarRoutes } from "./routes/calendar.routes";
 import { operationsRoutes } from "./routes/operations.routes";
 import { complaintsRoutes } from "./routes/complaints.routes";
+import { seedDemoData } from "./services/seedDemoData";
 
 const app = express();
 
@@ -40,8 +41,8 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1", academicRoutes);
 app.use("/api/v1/timetable", timetableRoutes);
+app.use("/api/v1", academicRoutes);
 app.use("/api/v1/calendar", calendarRoutes);
 app.use("/api/v1", operationsRoutes);
 app.use("/api/v1/complaints", complaintsRoutes);
@@ -54,18 +55,17 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 async function startServer() {
   try {
     await connectDatabase();
+    if (env.demoMode) await seedDemoData();
     app.listen(env.port, () => {
-      console.log(`Timely API listening on http://localhost:${env.port}`);
+      console.log(`ClassSync API listening on http://localhost:${env.port}`);
     });
   } catch (error) {
-    console.warn("MongoDB unavailable; continuing in demo mode.");
-    app.listen(env.port, () => {
-      console.log(`Timely API listening in demo mode on http://localhost:${env.port}`);
-    });
+    console.error("ClassSync API could not start:", error instanceof Error ? error.message : error);
+    process.exit(1);
   }
 }
 
 startServer().catch((error) => {
-  console.error("Failed to boot Timely API", error);
+  console.error("Failed to boot ClassSync API", error);
   process.exit(1);
 });

@@ -37,7 +37,7 @@ calendarRoutes.post("/", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), validateBod
 
 calendarRoutes.patch("/:id", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), validateBody(calendarBaseInput.partial()), async (req: Request, res: Response) => {
   const input = calendarBaseInput.partial().parse(req.body);
-  const day = await CalendarDay.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId }, { $set: input }, { new: true, runValidators: true }).lean();
+  const day = await CalendarDay.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId }, { $set: input }, { returnDocument: "after", runValidators: true }).lean();
   if (!day) return res.status(404).json({ message: "Calendar entry not found." });
   return res.json({ day });
 });
@@ -55,8 +55,7 @@ calendarRoutes.post("/sync-holidays", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN")
   const days = await Promise.all(seed.map(({ month, day, name }) => CalendarDay.findOneAndUpdate(
     { schoolId: req.user?.schoolId, date: `${input.year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`, name },
     { $setOnInsert: { schoolId: req.user?.schoolId, date: `${input.year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`, type: "PUBLIC_HOLIDAY", name, source: "IMPORTED", needsConfirmation: false, state: input.state ?? "" } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   )));
   return res.json({ days, source: "bundled-national-holidays", needsExternalProvider: Boolean(process.env.HOLIDAY_API_KEY && process.env.HOLIDAY_PROVIDER) });
 });
-

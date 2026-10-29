@@ -1,15 +1,16 @@
 # Build Progress
 
-## Step 1: Baseline and single dev command
+## Presentation setup
 
-- Done: documented initial architecture decisions, expanded the environment template, and made `npm run dev` start frontend and API processes together.
-- Remaining: replace active Supabase and browser-demo paths with the Express API; implement the remaining product phases.
-- Assumptions: local development may use MongoDB at `mongodb://127.0.0.1:27017/timely`; production email and holiday integrations are opt-in through environment configuration.
+- Done: removed unused TanStack Start, Supabase, and Lovable scaffolding without removing the design-system page used by the live React Router app.
+- Done: kept the Vite/Tailwind 3 CSS path singular, resolved dependencies with plain `npm install`, and disabled backend watch restarts during the presentation run.
+- Done: aligned `MONGO_URI`, added an idempotent demo seed with administrator, teacher, and student accounts, and seeded a published Class 10-A timetable.
+- Done: enabled a temporary in-memory MongoDB fallback for demo mode and automatic seed initialization when the API starts.
+- Verified: client and server builds, 18 tests, all three API logins, public school search, and the 48-period public timetable.
+- Note: the first in-memory startup downloads a MongoDB binary; its data resets when the server stops. Set `DEMO_MODE=false` to require a persistent MongoDB instance.
 
-## Current status
+## Remaining presentation work
 
-- Latest completed step: 2 foundation and initial authentication endpoints; the frontend school/teacher/student registration and login screens are connected to these endpoints.
-- Done: mandatory token school scope, active-account middleware, admin-only academic/timetable writes, school-scoped unique account indexes, Zod body/query helpers, tenant scope tests, OTP-backed school/teacher registration, pending student registration, school search/classes/subjects, and setup CRUD write validation.
-- Remaining: complete all auth reset/change flows, link and approve records robustly, replace remaining demo/Supabase UI paths, then implement setup UI, versioned timetables, calendar, substitutions, requests, complaints, notifications, seed, and end-to-end tests.
-- Assumptions: MongoDB is the only persistence target; OTP uses console output outside production and Resend when configured; students do not need email verification.
-- Next step: add domain models for versioned schedules, calendar, requests, complaints, and notifications, then build the corresponding APIs.
+- Walk the complete administrator, teacher, and student paths in a browser and fix visible runtime issues.
+- Standardize the product name to ClassSync, then polish responsive layout and seed data for the presentation.
+- Run formatting/linting, complete verification, and update the presenter-focused README.

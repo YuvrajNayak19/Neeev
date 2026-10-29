@@ -37,7 +37,7 @@ operationsRoutes.post("/absences", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), v
     const absence = await Absence.findOneAndUpdate(
       { schoolId: req.user?.schoolId, teacherId: teacher._id, date },
       { $set: { schoolId: req.user?.schoolId, teacherId: teacher._id, date, isFullDay: input.isFullDay, affectedPeriods: periods, reason: input.reason } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
     saved.push(absence);
     const version = await TimetableVersion.findOne({ schoolId: req.user?.schoolId, status: "PUBLISHED" }).lean();
@@ -78,7 +78,7 @@ operationsRoutes.post("/substitutions/publish", requireRole("SCHOOL_ADMIN", "SUP
 operationsRoutes.patch("/substitutions/:id/seen", requireRole("TEACHER"), async (req: Request, res: Response) => {
   const teacher = await Teacher.findOne({ schoolId: req.user?.schoolId, userId: req.user?.userId }).select("_id").lean();
   if (!teacher) return res.status(404).json({ message: "Teacher profile not found." });
-  const updated = await DailySubstitution.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId, substituteTeacherId: teacher._id, status: "PUBLISHED" }, { $set: { acknowledgedAt: new Date() } }, { new: true }).lean();
+  const updated = await DailySubstitution.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId, substituteTeacherId: teacher._id, status: "PUBLISHED" }, { $set: { acknowledgedAt: new Date() } }, { returnDocument: "after" }).lean();
   if (!updated) return res.status(404).json({ message: "Published duty not found." });
   return res.json({ substitution: updated });
 });
@@ -103,7 +103,7 @@ operationsRoutes.patch("/substitutions/:id", requireRole("SCHOOL_ADMIN", "SUPER_
   substitution.substituteTeacherId = substitute?._id ?? null;
   substitution.isManualOverride = true;
   substitution.reason = substitute ? "Manually overridden by school administrator" : "No free qualified teacher available. Class assigned to Self-Study";
-  const updated = await DailySubstitution.findOneAndUpdate({ _id: substitution._id, schoolId: req.user?.schoolId }, { $set: { substituteTeacherId: substitution.substituteTeacherId, isManualOverride: true, reason: substitution.reason, status: "DRAFT" } }, { new: true }).lean();
+  const updated = await DailySubstitution.findOneAndUpdate({ _id: substitution._id, schoolId: req.user?.schoolId }, { $set: { substituteTeacherId: substitution.substituteTeacherId, isManualOverride: true, reason: substitution.reason, status: "DRAFT" } }, { returnDocument: "after" }).lean();
   return res.json({ substitution: updated });
 });
 

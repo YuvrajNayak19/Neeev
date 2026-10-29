@@ -79,7 +79,7 @@ export async function runSubstitutionDraft(schoolId: string, date: string, reset
           reason: chosen ? `Cover proposed for ${subject.name}` : "No free qualified teacher available. Class assigned to Self-Study",
           isManualOverride: false,
         } },
-        { upsert: true, new: true, setDefaultsOnInsert: true },
+        { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
       );
       outputs.push(created);
       if (chosen) {

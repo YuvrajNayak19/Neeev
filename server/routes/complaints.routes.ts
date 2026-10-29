@@ -21,7 +21,7 @@ complaintsRoutes.post("/", requireRole("STUDENT"), validateBody(complaintSchema)
   const counter = await ComplaintCounter.findOneAndUpdate(
     { schoolId: student.schoolId, studentId: student._id, day },
     { $inc: { count: 1 }, $setOnInsert: { expiresAt: new Date(Date.now() + 48 * 60 * 60_000) } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
   if (counter.count > 3) {
     await ComplaintCounter.updateOne({ _id: counter._id }, { $inc: { count: -1 } });
@@ -57,8 +57,7 @@ const statusSchema = z.object({ status: z.enum(["SEEN", "RESOLVED"]), resolution
 complaintsRoutes.patch("/:id", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), validateBody(statusSchema), async (req: Request, res: Response) => {
   const input = statusSchema.parse(req.body);
   const visibility = req.user?.role === "SUPER_ADMIN" ? {} : { serious: false };
-  const complaint = await Complaint.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId, ...visibility }, { $set: { status: input.status, resolutionNote: input.resolutionNote ?? "" } }, { new: true }).lean();
+  const complaint = await Complaint.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId, ...visibility }, { $set: { status: input.status, resolutionNote: input.resolutionNote ?? "" } }, { returnDocument: "after" }).lean();
   if (!complaint) return res.status(404).json({ message: "Complaint not found." });
   return res.json({ complaint });
 });
-

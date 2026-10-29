@@ -67,7 +67,7 @@ requestsRoutes.get("/inbox", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), async (
 });
 
 requestsRoutes.post("/:id/accept", requireRole("TEACHER"), async (req: Request, res: Response) => {
-  const request = await RequestModel.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId, counterpartId: req.user?.userId, status: "PENDING_COUNTERPART" }, { $set: { status: "PENDING_ADMIN", counterpartAcceptedAt: new Date() } }, { new: true }).lean();
+  const request = await RequestModel.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId, counterpartId: req.user?.userId, status: "PENDING_COUNTERPART" }, { $set: { status: "PENDING_ADMIN", counterpartAcceptedAt: new Date() } }, { returnDocument: "after" }).lean();
   if (!request) return res.status(404).json({ message: "Request awaiting your acceptance was not found." });
   return res.json({ request });
 });
