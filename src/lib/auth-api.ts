@@ -48,16 +48,29 @@ function humanize(message: string, status: number): string {
   return message;
 }
 
+/**
+ * Where the API lives. Empty in development (Vite proxies /api to the local server). In production
+ * set VITE_API_URL to the deployed API origin, e.g. https://classsync-api.onrender.com
+ */
+const API_BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? "").replace(/\/+$/, "");
+
+const UNREACHABLE = "We can't reach ClassSync right now. Check your internet connection and try again.";
+
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`/api/v1${path}`, {
+    response = await fetch(`${API_BASE}/api/v1${path}`, {
       ...options,
       credentials: "include",
       headers: { "Content-Type": "application/json", ...options.headers },
     });
   } catch {
-    throw new ApiError("We can't reach ClassSync right now. Check your internet connection and try again.", 0);
+    throw new ApiError(UNREACHABLE, 0);
+  }
+  // A static host without the API answers /api/* with its HTML page (or a bare 404). Treat that as
+  // "server unreachable" instead of pretending it was a real API response.
+  if (!(response.headers.get("content-type") ?? "").includes("application/json")) {
+    throw new ApiError(UNREACHABLE, 0, "API_UNAVAILABLE");
   }
   const result = (await response.json().catch(() => ({}))) as T & { message?: string; code?: string; errors?: Array<{ msg?: string; message?: string }> };
   if (!response.ok) {

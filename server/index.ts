@@ -19,10 +19,18 @@ import { schoolRoutes } from "./routes/school.routes";
 import { seedDemoData } from "./services/seedDemoData";
 
 const app = express();
+// Hosts like Render/Railway sit behind a proxy; needed for correct client IPs in the rate limiter.
+app.set("trust proxy", 1);
+
+// CLIENT_URL may list several origins, comma-separated (e.g. the Lovable URL and a custom domain).
+const allowedOrigins = (process.env.CLIENT_URL ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL ?? "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );

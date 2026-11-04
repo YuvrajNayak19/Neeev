@@ -68,7 +68,13 @@ export function LoginPage() {
     try {
       await finish(await login({ role: account.role, identifier: account.identifier, password: account.password, ...("schoolId" in account ? { schoolId: account.schoolId } : {}) }));
     } catch (requestError) {
-      setError(requestError instanceof ApiError && requestError.status === 0 ? requestError.message : "The demo school isn't ready yet. Make sure the API is running (npm run dev) and try again.");
+      setError(
+        requestError instanceof ApiError && requestError.status === 0
+          ? requestError.message
+          : import.meta.env.DEV
+            ? "The demo school isn't ready yet. Make sure the API is running (npm run dev) and try again."
+            : "The sample school is unavailable right now. Please try again in a minute.",
+      );
     } finally {
       setBusy(null);
     }

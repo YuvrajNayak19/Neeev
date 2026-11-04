@@ -7,6 +7,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:client": "vite",
     "dev:server": "tsx --import dotenv/config server/index.ts",
+    "start": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "build:server": "tsc -p tsconfig.server.json --noEmit",
     "seed": "tsx --import dotenv/config server/seed.ts",

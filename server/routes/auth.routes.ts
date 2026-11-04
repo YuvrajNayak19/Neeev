@@ -69,13 +69,18 @@ function issueToken(user: { _id: unknown; schoolId: unknown; role: string }) {
   );
 }
 
+// In production the web app and the API usually live on different domains, so the cookie must be
+// SameSite=None (which browsers only accept with Secure).
+const isProduction = process.env.NODE_ENV === "production";
+const authCookieOptions = {
+  httpOnly: true,
+  sameSite: isProduction ? ("none" as const) : ("lax" as const),
+  secure: isProduction,
+  path: "/",
+};
+
 function setAuthCookie(res: Response, token: string) {
-  res.cookie("token", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  });
+  res.cookie("token", token, authCookieOptions);
 }
 
 function defaultAcademicYear() {
@@ -295,7 +300,7 @@ authRoutes.post("/refresh", authRateLimit, async (req: Request, res: Response) =
 });
 
 authRoutes.post("/logout", (_req: Request, res: Response) => {
-  res.clearCookie("token", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
+  res.clearCookie("token", authCookieOptions);
   return res.json({ success: true });
 });
 
