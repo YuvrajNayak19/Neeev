@@ -10,6 +10,9 @@ export default defineConfig(({ command }) => {
   return {
     plugins: [react()],
     define: isBuild ? { "process.env.NODE_ENV": JSON.stringify("production") } : undefined,
+    // With NODE_ENV=development in .env the JSX transform still emits jsxDEV() calls, which the
+    // production React runtime lacks ("a.jsxDEV is not a function"). Force the production transform.
+    esbuild: isBuild ? { jsxDev: false } : undefined,
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
     server: {
       port: 5173,
