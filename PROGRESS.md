@@ -1,16 +1,18 @@
 # Build Progress
 
-## Presentation setup
+## ClassSync redesign (branch `classsync-redesign`)
 
-- Done: removed unused TanStack Start, Supabase, and Lovable scaffolding without removing the design-system page used by the live React Router app.
-- Done: kept the Vite/Tailwind 3 CSS path singular, resolved dependencies with plain `npm install`, and disabled backend watch restarts during the presentation run.
-- Done: aligned `MONGO_URI`, added an idempotent demo seed with administrator, teacher, and student accounts, and seeded a published Class 10-A timetable.
-- Done: enabled a temporary in-memory MongoDB fallback for demo mode and automatic seed initialization when the API starts.
-- Verified: client and server builds, 18 tests, all three API logins, public school search, and the 48-period public timetable.
-- Note: the first in-memory startup downloads a MongoDB binary; its data resets when the server stops. Set `DEMO_MODE=false` to require a persistent MongoDB instance.
+- Done: rebrand to ClassSync (titles, meta, nav, footer, OTP email text, README, favicon) with a new logo mark and wordmark.
+- Done: warm light design system (cream, peach, blush, plum accent; Fraunces + Plus Jakarta Sans) as CSS variables mapped into Tailwind; shadcn primitives restyled; dark-theme overrides and dead CSS removed.
+- Done: landing page with illustrated hero, typewriter sub line, About, Features (alternating rows + bento previews), How it works, Roles, FAQ, CTA, footer, Privacy and Terms pages.
+- Done: simplified two-panel login (email or phone, or Try as Principal/Teacher/Student) and registration (school, teacher, student) with inline validation and a demo OTP.
+- Done: app shell and every app screen rebuilt on live data: admin dashboard, substitutions, timetable, requests, people, student concerns, teacher day/routine/requests, student today/weekly/concerns, profile.
+- Done: realistic demo seed (10 sections, 24 teachers, 480 clash-free periods, students, absences, requests, notices, concerns).
+- Done: removed dead components, unused UI wrappers and 30 unused dependencies; React's production runtime is now used in builds; app routes are lazy-loaded.
+- Verified: typecheck, lint, 18 tests, client build; Playwright screenshots at 360/390/768/1440 with no horizontal overflow; end-to-end assign, approve request, approve sign-up, post notice and mark absent.
 
-## Remaining presentation work
+## Open items
 
-- Walk the complete administrator, teacher, and student paths in a browser and fix visible runtime issues.
-- Standardize the product name to ClassSync, then polish responsive layout and seed data for the presentation.
-- Run formatting/linting, complete verification, and update the presenter-focused README.
+- Timetable generation/editing UI is not exposed; the timetable page shows the published version.
+- Replace placeholder contact email and social links in `src/components/public/site-footer.tsx` before launch.
+- Privacy and terms pages are placeholders and need a reviewed policy.

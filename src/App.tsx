@@ -1,7 +1,6 @@
 import { Lock } from "lucide-react";
 import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { AppShell } from "@/components/app/app-shell";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +11,7 @@ import { LandingPage } from "@/pages/landing-page";
 
 // Everything behind sign-in is split out so the public landing page stays light.
 const named = <T extends Record<string, unknown>>(loader: () => Promise<T>, key: keyof T) => lazy(() => loader().then((module) => ({ default: module[key] as React.ComponentType })));
+const AppShell = lazy(() => import("@/components/app/app-shell").then((module) => ({ default: module.AppShell })));
 const LoginPage = named(() => import("@/pages/auth/login-page"), "LoginPage");
 const RegisterPage = named(() => import("@/pages/auth/register-page"), "RegisterPage");
 const SchedulePage = named(() => import("@/pages/schedule-page"), "SchedulePage");
@@ -53,9 +53,11 @@ function ProtectedLayout() {
   if (!role) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   if (!isPathAllowedForRole(location.pathname, role)) return <Navigate to="/403" replace />;
   return (
-    <AppShell>
-      <Suspense fallback={<PageFallback />}><Outlet /></Suspense>
-    </AppShell>
+    <Suspense fallback={<FullScreenFallback />}>
+      <AppShell>
+        <Suspense fallback={<PageFallback />}><Outlet /></Suspense>
+      </AppShell>
+    </Suspense>
   );
 }
 
