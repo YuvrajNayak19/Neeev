@@ -75,6 +75,9 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 }
 
 async function networkRequest<T>(path: string, options: RequestInit): Promise<T> {
+  // Production build with no API configured (static hosting): don't probe /api/* on the static host,
+  // it can only 404 and the browser logs every attempt in the console.
+  if (!import.meta.env.DEV && !API_BASE) throw new ApiError(UNREACHABLE, 0, "API_UNAVAILABLE");
   let response: Response;
   try {
     response = await fetch(`${API_BASE}/api/v1${path}`, {
