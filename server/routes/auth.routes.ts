@@ -12,7 +12,8 @@ import { ClassSection, Otp, School, Student, Subject, Teacher, User } from "../m
 import { validateBody, validateQuery } from "../utils/validation";
 
 export const authRoutes = Router();
-const authRateLimit = rateLimit({ windowMs: 15 * 60_000, limit: 12, standardHeaders: true, legacyHeaders: false });
+// Demo mode is used for live showcases where many people sign in from one network.
+const authRateLimit = rateLimit({ windowMs: 15 * 60_000, limit: env.demoMode ? 300 : 12, standardHeaders: true, legacyHeaders: false });
 const emailSchema = z.string().trim().email().max(254).transform((value) => value.toLowerCase());
 const passwordSchema = z.string().min(8).max(128);
 const schoolIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Choose a registered school.");
@@ -20,15 +21,15 @@ const schoolIdSchema = z.string().regex(/^[a-f\d]{24}$/i, "Choose a registered s
 const schoolRegistrationSchema = z.object({
   name: z.string().trim().min(2).max(160),
   board: z.enum(["CBSE", "ICSE", "State", "Other"]).default("Other"),
-  state: z.string().trim().min(2).max(100),
+  state: z.string().trim().max(100).default(""),
   city: z.string().trim().min(2).max(100),
-  schoolEmail: emailSchema,
+  schoolEmail: emailSchema.optional(),
   phone: z.string().trim().max(30).default(""),
   adminName: z.string().trim().min(2).max(120),
   adminEmail: emailSchema,
   password: passwordSchema,
-  academicYear: z.string().trim().regex(/^\d{4}-\d{2,4}$/),
-  classRange: z.tuple([z.number().int().min(6).max(12), z.number().int().min(6).max(12)]).refine(([start, end]) => start <= end),
+  academicYear: z.string().trim().regex(/^\d{4}-\d{2,4}$/).default(defaultAcademicYear),
+  classRange: z.tuple([z.number().int().min(6).max(12), z.number().int().min(6).max(12)]).refine(([start, end]) => start <= end).default([6, 12]),
   website: z.string().max(0).optional(),
 });
 
@@ -37,7 +38,7 @@ const teacherRegistrationSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: emailSchema,
   password: passwordSchema,
-  category: z.enum(["TGT", "PGT", "PRT"]),
+  category: z.enum(["TGT", "PGT", "PRT"]).default("TGT"),
   subjects: z.array(z.string().regex(/^[a-f\d]{24}$/i)).max(30).default([]),
 });
 
@@ -53,7 +54,8 @@ const verifyOtpSchema = z.object({ email: emailSchema, code: z.string().regex(/^
 const publicSchoolsQuerySchema = z.object({ q: z.string().trim().max(100).default("") });
 const publicSchoolIdParamsSchema = z.object({ id: schoolIdSchema });
 const loginSchema = z.discriminatedUnion("role", [
-  z.object({ role: z.enum(["admin", "teacher"]), identifier: emailSchema, password: passwordSchema }),
+  // "staff" signs in an administrator or teacher by email or phone number.
+  z.object({ role: z.enum(["staff", "admin", "teacher"]), identifier: z.string().trim().min(3).max(254), password: passwordSchema }),
   z.object({ role: z.literal("student"), schoolId: schoolIdSchema, identifier: z.string().trim().min(1).max(40), password: passwordSchema }),
 ]);
 
@@ -76,7 +78,16 @@ function setAuthCookie(res: Response, token: string) {
   });
 }
 
-async function issueOtp(email: string, purpose: RegistrationPurpose, payload: Record<string, unknown>) {
+function defaultAcademicYear() {
+  const now = new Date();
+  const start = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${start}-${String(start + 1).slice(2)}`;
+}
+
+/** In demo mode outside production, the code is returned to the client so showcases work without email. */
+const exposeDevOtp = () => env.demoMode && process.env.NODE_ENV !== "production";
+
+async function issueOtp(email: string, purpose: RegistrationPurpose, payload: Record<string, unknown>): Promise<string> {
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
   await Otp.deleteMany({ email, purpose });
   await Otp.create({ email, purpose, codeHash: await bcrypt.hash(code, 10), payload, expiresAt: new Date(Date.now() + 10 * 60_000) });
@@ -92,16 +103,26 @@ async function issueOtp(email: string, purpose: RegistrationPurpose, payload: Re
   } else {
     throw new Error("Email delivery is not configured.");
   }
+  return code;
 }
 
 async function requestRegistrationOtp(purpose: RegistrationPurpose, email: string, payload: Record<string, unknown>, res: Response) {
   try {
-    await issueOtp(email, purpose, payload);
-    return res.status(202).json({ message: "Verification code sent. It expires in 10 minutes." });
+    const code = await issueOtp(email, purpose, payload);
+    return res.status(202).json({ message: "Verification code sent. It expires in 10 minutes.", ...(exposeDevOtp() ? { devCode: code } : {}) });
   } catch (error) {
     console.error("OTP delivery failed", error);
     return res.status(503).json({ message: error instanceof Error ? error.message : "Could not send verification code." });
   }
+}
+
+async function findStaffUser(identifier: string, role: "staff" | "admin" | "teacher") {
+  type StaffRole = "SUPER_ADMIN" | "SCHOOL_ADMIN" | "TEACHER";
+  const roles: StaffRole[] = role === "admin" ? ["SUPER_ADMIN", "SCHOOL_ADMIN"] : role === "teacher" ? ["TEACHER"] : ["SUPER_ADMIN", "SCHOOL_ADMIN", "TEACHER"];
+  if (identifier.includes("@")) return User.findOne({ email: identifier.toLowerCase(), role: { $in: roles } }).lean();
+  const digits = identifier.replace(/\D/g, "").slice(-10);
+  if (digits.length < 10) return null;
+  return User.findOne({ "profile.phone": new RegExp(`${digits}$`), role: { $in: roles } }).lean();
 }
 
 function escapeRegex(value: string) {
@@ -189,7 +210,7 @@ authRoutes.post("/verify-otp", authRateLimit, validateBody(verifyOtpSchema), asy
     const school = await School.create({
       name: schoolInput.name, code: schoolCode, academicYear: schoolInput.academicYear,
       board: schoolInput.board, state: schoolInput.state, city: schoolInput.city,
-      email: schoolInput.schoolEmail, phone: schoolInput.phone, status: "ACTIVE",
+      email: schoolInput.schoolEmail ?? schoolInput.adminEmail, phone: schoolInput.phone, status: "ACTIVE",
   classRange: schoolInput.classRange,
     });
     const user = await User.create({
@@ -231,7 +252,7 @@ authRoutes.post("/login", authRateLimit, validateBody(loginSchema), async (req: 
   const input = loginSchema.parse(req.body);
   const user = input.role === "student"
     ? await User.findOne({ schoolId: input.schoolId, role: "STUDENT", admissionNumber: input.identifier.toUpperCase() }).lean()
-    : await User.findOne({ email: input.identifier, role: input.role === "admin" ? { $in: ["SUPER_ADMIN", "SCHOOL_ADMIN"] } : "TEACHER" }).lean();
+    : await findStaffUser(input.identifier, input.role);
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) return res.status(401).json({ message: "Invalid credentials." });
   if (user.status === "PENDING") return res.status(403).json({ code: "PENDING_APPROVAL", message: "Waiting for approval from your school." });
   if (user.status !== "ACTIVE") return res.status(403).json({ message: "This account is not active." });
@@ -281,7 +302,98 @@ authRoutes.post("/logout", (_req: Request, res: Response) => {
 authRoutes.get("/me", requireAuth, async (req: Request, res: Response) => {
   const user = await User.findOne({ _id: req.user?.userId, schoolId: req.user?.schoolId }).select("-passwordHash").lean();
   if (!user) return res.status(404).json({ message: "User not found." });
+  const [school, teacher, student] = await Promise.all([
+    School.findById(user.schoolId).select("name city state board academicYear code").lean(),
+    user.role === "TEACHER" ? Teacher.findOne({ schoolId: user.schoolId, userId: user._id }).select("_id name qualificationCategory").lean() : null,
+    user.role === "STUDENT" ? Student.findOne({ schoolId: user.schoolId, userId: user._id }).populate("classSectionId", "grade section stream").lean() : null,
+  ]);
+  return res.json({ user, school, teacher, student });
+});
+
+const profileSchema = z.object({ name: z.string().trim().min(2).max(120), phone: z.string().trim().max(20).default("") });
+authRoutes.patch("/me", requireAuth, validateBody(profileSchema), async (req: Request, res: Response) => {
+  const input = profileSchema.parse(req.body);
+  const user = await User.findOneAndUpdate({ _id: req.user?.userId, schoolId: req.user?.schoolId }, { $set: { "profile.name": input.name, "profile.phone": input.phone } }, { returnDocument: "after" }).select("-passwordHash").lean();
+  if (!user) return res.status(404).json({ message: "User not found." });
+  if (user.role === "TEACHER") await Teacher.updateOne({ schoolId: user.schoolId, userId: user._id }, { $set: { name: input.name } });
+  if (user.role === "STUDENT") await Student.updateOne({ schoolId: user.schoolId, userId: user._id }, { $set: { name: input.name } });
   return res.json({ user });
+});
+
+const passwordChangeSchema = z.object({ currentPassword: z.string().min(1), newPassword: passwordSchema });
+authRoutes.post("/me/password", requireAuth, authRateLimit, validateBody(passwordChangeSchema), async (req: Request, res: Response) => {
+  const input = passwordChangeSchema.parse(req.body);
+  const user = await User.findOne({ _id: req.user?.userId, schoolId: req.user?.schoolId });
+  if (!user) return res.status(404).json({ message: "User not found." });
+  if (!(await bcrypt.compare(input.currentPassword, user.passwordHash))) return res.status(400).json({ message: "Your current password is not correct." });
+  user.passwordHash = await bcrypt.hash(input.newPassword, 12);
+  user.mustChangePassword = false;
+  await user.save();
+  return res.json({ success: true });
+});
+
+/* ---- School people management (administrators) ---- */
+
+authRoutes.get("/admin/users", requireAuth, requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
+  const schoolId = req.user?.schoolId;
+  const [users, teachers, students] = await Promise.all([
+    User.find({ schoolId }).select("-passwordHash").sort({ createdAt: -1 }).lean(),
+    Teacher.find({ schoolId }).populate("primarySubjects", "name").select("userId name qualificationCategory primarySubjects").lean(),
+    Student.find({ schoolId }).populate("classSectionId", "grade section").select("userId classSectionId admissionNumber").lean(),
+  ]);
+  const teacherByUser = new Map(teachers.filter((item) => item.userId).map((item) => [String(item.userId), item]));
+  const studentByUser = new Map(students.map((item) => [String(item.userId), item]));
+  const people = users.map((user) => {
+    const teacher = teacherByUser.get(String(user._id));
+    const student = studentByUser.get(String(user._id));
+    const classSection = student?.classSectionId as unknown as { grade?: number; section?: string } | undefined;
+    return {
+      id: String(user._id),
+      name: user.profile?.name || teacher?.name || "Unnamed",
+      role: user.role,
+      status: user.status,
+      email: user.email ?? "",
+      phone: user.profile?.phone ?? "",
+      admissionNumber: user.admissionNumber ?? "",
+      category: teacher?.qualificationCategory ?? "",
+      subjects: ((teacher?.primarySubjects ?? []) as unknown as Array<{ name?: string }>).map((item) => item.name).filter(Boolean),
+      className: classSection?.grade ? `${classSection.grade}-${classSection.section}` : "",
+      createdAt: user.createdAt,
+      isSelf: String(user._id) === req.user?.userId,
+    };
+  });
+  return res.json({ people });
+});
+
+const statusChangeSchema = z.object({ status: z.enum(["ACTIVE", "SUSPENDED"]) });
+authRoutes.patch("/admin/users/:id/status", requireAuth, requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), validateBody(statusChangeSchema), async (req: Request, res: Response) => {
+  const { status } = statusChangeSchema.parse(req.body);
+  if (req.params.id === req.user?.userId) return res.status(400).json({ message: "You can't change the status of your own account." });
+  const target = await User.findOneAndUpdate({ _id: req.params.id, schoolId: req.user?.schoolId, role: { $in: ["TEACHER", "STUDENT"] } }, { $set: { status } }, { returnDocument: "after" }).select("_id role status profile").lean();
+  if (!target) return res.status(404).json({ message: "That account was not found in your school." });
+  return res.json({ user: target });
+});
+
+const createPersonSchema = z.discriminatedUnion("role", [
+  z.object({ role: z.literal("TEACHER"), name: z.string().trim().min(2).max(120), email: emailSchema, password: passwordSchema, category: z.enum(["PRT", "TGT", "PGT"]).default("TGT") }),
+  z.object({ role: z.literal("STUDENT"), name: z.string().trim().min(2).max(120), admissionNumber: z.string().trim().min(1).max(40).transform((value) => value.toUpperCase()), classSectionId: z.string().regex(/^[a-f\d]{24}$/i), password: passwordSchema }),
+]);
+authRoutes.post("/admin/users", requireAuth, requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), validateBody(createPersonSchema), async (req: Request, res: Response) => {
+  const input = createPersonSchema.parse(req.body);
+  const schoolId = req.user!.schoolId;
+  const passwordHash = await bcrypt.hash(input.password, 12);
+  if (input.role === "TEACHER") {
+    if (await User.exists({ schoolId, email: input.email })) return res.status(409).json({ message: "Someone in your school already uses this email." });
+    const user = await User.create({ schoolId, email: input.email, passwordHash, role: "TEACHER", status: "ACTIVE", mustChangePassword: true, profile: { name: input.name } });
+    await Teacher.findOneAndUpdate({ schoolId, email: input.email }, { $set: { userId: user._id, name: input.name, email: input.email, qualificationCategory: input.category } }, { upsert: true, setDefaultsOnInsert: true });
+    return res.status(201).json({ user: { id: user._id, role: user.role, status: user.status } });
+  }
+  const classSection = await ClassSection.findOne({ _id: input.classSectionId, schoolId }).lean();
+  if (!classSection) return res.status(404).json({ message: "Choose a class from your school." });
+  if (await User.exists({ schoolId, admissionNumber: input.admissionNumber })) return res.status(409).json({ message: "That admission number is already registered." });
+  const user = await User.create({ schoolId, admissionNumber: input.admissionNumber, passwordHash, role: "STUDENT", status: "ACTIVE", mustChangePassword: true, profile: { name: input.name } });
+  await Student.create({ schoolId, userId: user._id, classSectionId: classSection._id, name: input.name, admissionNumber: input.admissionNumber });
+  return res.status(201).json({ user: { id: user._id, role: user.role, status: user.status } });
 });
 
 async function generateSchoolCode(): Promise<string> {

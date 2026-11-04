@@ -59,7 +59,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     req.user = decoded;
     req.schoolId = decoded.schoolId;
     next();
-  } catch (_error) {
+  } catch {
     res.status(401).json({ message: "Invalid or expired token." });
   }
 }

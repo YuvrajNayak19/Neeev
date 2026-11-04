@@ -18,3 +18,4 @@ export * from "./Subject";
 export * from "./Teacher";
 export * from "./TeacherAssignment";
 export * from "./User";
+export * from "./Notice";

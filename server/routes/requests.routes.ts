@@ -1,7 +1,8 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { CalendarDay, ClassSection, Notification, RequestModel, Subject, Teacher, TimetableOverride, TimetableSlot, User } from "../models";
+import { Absence, CalendarDay, ClassSection, Notification, RequestModel, Subject, Teacher, TimetableOverride, User } from "../models";
+import { runSubstitutionDraft } from "../services/substitutionEngine";
 import { requireAuth, requireRole } from "../middleware/auth";
 import { validateBody } from "../utils/validation";
 import { canTeachGrade } from "../services/timetableSolverService";
@@ -22,6 +23,41 @@ const requestInput = z.object({
     reason: z.string().trim().max(500).optional(),
   }),
 });
+
+type RequestRow = { _id: unknown; requesterId: unknown; counterpartId?: unknown; type: string; status: string; date: string; payload: unknown; decisionNote?: string; createdAt?: Date };
+
+/** Adds names and labels so the UI never has to show raw ids. */
+async function present(schoolId: string, requests: RequestRow[]) {
+  const payloads = requests.map((item) => (item.payload ?? {}) as { classSectionId?: string; otherClassSectionId?: string; subjectId?: string; periodNumber?: number; otherPeriodNumber?: number; reason?: string });
+  const userIds = requests.flatMap((item) => [item.requesterId, item.counterpartId].filter(Boolean).map(String));
+  const [users, classes, subjects] = await Promise.all([
+    User.find({ schoolId, _id: { $in: userIds } }).select("profile.name").lean(),
+    ClassSection.find({ schoolId, _id: { $in: payloads.flatMap((item) => [item.classSectionId, item.otherClassSectionId].filter(Boolean).map(String)) } }).lean(),
+    Subject.find({ schoolId, _id: { $in: payloads.map((item) => item.subjectId).filter(Boolean).map(String) } }).select("name").lean(),
+  ]);
+  const name = new Map(users.map((item) => [String(item._id), item.profile?.name ?? ""]));
+  const className = new Map(classes.map((item) => [String(item._id), `${item.grade}-${item.section}`]));
+  const subjectName = new Map(subjects.map((item) => [String(item._id), item.name]));
+  return requests.map((item, index) => {
+    const payload = payloads[index];
+    return {
+      id: String(item._id),
+      type: item.type,
+      status: item.status,
+      date: item.date,
+      requester: name.get(String(item.requesterId)) ?? "",
+      counterpart: item.counterpartId ? name.get(String(item.counterpartId)) ?? "" : "",
+      className: payload.classSectionId ? className.get(String(payload.classSectionId)) ?? "" : "",
+      otherClassName: payload.otherClassSectionId ? className.get(String(payload.otherClassSectionId)) ?? "" : "",
+      subject: payload.subjectId ? subjectName.get(String(payload.subjectId)) ?? "" : "",
+      periodNumber: payload.periodNumber ?? null,
+      otherPeriodNumber: payload.otherPeriodNumber ?? null,
+      reason: payload.reason ?? "",
+      decisionNote: item.decisionNote ?? "",
+      createdAt: item.createdAt,
+    };
+  });
+}
 
 async function validateRequestTarget(schoolId: string, type: string, payload: z.infer<typeof requestInput>["payload"], date: string) {
   const holiday = await CalendarDay.findOne({ schoolId, date: { $lte: date }, $or: [{ endDate: null }, { endDate: { $gte: date } }] }).lean();
@@ -58,7 +94,12 @@ requestsRoutes.post("/", requireRole("TEACHER"), validateBody(requestInput), asy
 
 requestsRoutes.get("/mine", requireRole("TEACHER"), async (req: Request, res: Response) => {
   const requests = await RequestModel.find({ schoolId: req.user?.schoolId, requesterId: req.user?.userId }).sort({ createdAt: -1 }).lean();
-  return res.json({ requests });
+  return res.json({ requests: await present(req.user!.schoolId, requests as RequestRow[]) });
+});
+
+requestsRoutes.get("/all", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
+  const requests = await RequestModel.find({ schoolId: req.user?.schoolId }).sort({ createdAt: -1 }).limit(200).lean();
+  return res.json({ requests: await present(req.user!.schoolId, requests as RequestRow[]) });
 });
 
 requestsRoutes.get("/inbox", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"), async (req: Request, res: Response) => {
@@ -86,11 +127,23 @@ requestsRoutes.post("/:id/decision", requireRole("SCHOOL_ADMIN", "SUPER_ADMIN"),
       await TimetableOverride.create({ schoolId: request.schoolId, date: request.date, classSectionId: classSection._id, periodNumber: payload.periodNumber, subjectId: payload.subjectId ?? null, teacherId: teacher?._id ?? null, requestId: request._id, approvedBy: req.user?.userId });
     }
   }
+  if (input.decision === "APPROVED" && request.type === "LEAVE_NOTICE") {
+    // An approved leave becomes an absence, so cover is planned for that day automatically.
+    const teacher = await Teacher.findOne({ schoolId: request.schoolId, userId: request.requesterId }).select("_id").lean();
+    if (teacher) {
+      await Absence.findOneAndUpdate(
+        { schoolId: request.schoolId, teacherId: teacher._id, date: request.date },
+        { $set: { isFullDay: true, affectedPeriods: [], reason: String((request.payload as { reason?: string })?.reason ?? "Approved leave") } },
+        { upsert: true, setDefaultsOnInsert: true },
+      );
+      await runSubstitutionDraft(String(request.schoolId), request.date).catch(() => undefined);
+    }
+  }
   request.status = input.decision;
   request.decisionNote = input.note;
   request.decidedBy = req.user?.userId as never;
   await request.save();
   const requesterId = String(request.requesterId);
   await Notification.create({ schoolId: request.schoolId, userId: requesterId, type: "REQUEST_DECISION", title: "Request decision", message: `Your ${request.type.toLowerCase().replaceAll("_", " ")} was ${input.decision.toLowerCase()}.`, link: "/teacher/requests" });
-  return res.json({ request });
+  return res.json({ request: (await present(req.user!.schoolId, [request.toObject() as RequestRow]))[0] });
 });

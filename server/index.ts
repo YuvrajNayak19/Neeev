@@ -14,6 +14,8 @@ import { timetableRoutes } from "./routes/timetable.routes";
 import { calendarRoutes } from "./routes/calendar.routes";
 import { operationsRoutes } from "./routes/operations.routes";
 import { complaintsRoutes } from "./routes/complaints.routes";
+import { requestsRoutes } from "./routes/requests.routes";
+import { schoolRoutes } from "./routes/school.routes";
 import { seedDemoData } from "./services/seedDemoData";
 
 const app = express();
@@ -30,7 +32,7 @@ app.use(morgan("dev"));
 app.use(
   rateLimit({
     windowMs: 60_000,
-    max: 100,
+    max: process.env.DEMO_MODE === "true" ? 1000 : 300,
     standardHeaders: true,
     legacyHeaders: false,
   }),
@@ -46,6 +48,8 @@ app.use("/api/v1", academicRoutes);
 app.use("/api/v1/calendar", calendarRoutes);
 app.use("/api/v1", operationsRoutes);
 app.use("/api/v1/complaints", complaintsRoutes);
+app.use("/api/v1/requests", requestsRoutes);
+app.use("/api/v1/school", schoolRoutes);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

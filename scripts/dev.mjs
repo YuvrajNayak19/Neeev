@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
 
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+// Set API_PORT to run the API somewhere other than 4000; Vite's proxy follows it.
+const env = { ...process.env, ...(process.env.API_PORT ? { PORT: process.env.API_PORT } : {}) };
 const children = [
-  spawn(npm, ["run", "dev:client"], { stdio: "inherit", shell: process.platform === "win32" }),
-  spawn(npm, ["run", "dev:server"], { stdio: "inherit", shell: process.platform === "win32" }),
+  spawn(npm, ["run", "dev:client"], { stdio: "inherit", shell: process.platform === "win32", env }),
+  spawn(npm, ["run", "dev:server"], { stdio: "inherit", shell: process.platform === "win32", env }),
 ];
 
 let shuttingDown = false;

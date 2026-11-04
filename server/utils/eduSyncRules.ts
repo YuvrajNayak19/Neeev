@@ -52,7 +52,6 @@ export function validateTimetable(entries: TimetableEntry[]) {
   const issues: string[] = [];
 
   for (const entry of entries) {
-    const key = `${entry.day}-${entry.periodNumber}`;
     const teacherKey = `${entry.teacherName}-${entry.day}-${entry.periodNumber}`;
     if (teacherByDayPeriod.has(teacherKey)) {
       issues.push(`${entry.teacherName} is double-booked on ${entry.day} period ${entry.periodNumber}.`);
