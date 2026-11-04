@@ -1,11 +1,11 @@
-import { ArrowLeft, Loader2, Printer } from "lucide-react";
+import { ArrowLeft, GraduationCap, Loader2, Printer } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPublicClasses, getPublicTimetable, searchSchools, type PublicClassSection, type PublicSchool, type PublicTimetable } from "../../lib/auth-api";
 import { LUNCH, PERIODS, SUBJECT_ACCENT, subjectCategory } from "../../lib/subject-style";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const fieldClass = "mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 disabled:bg-slate-50 disabled:text-slate-400";
+const fieldClass = "mt-1 w-full rounded-lg border border-slate-600 bg-[#0b1020] px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 disabled:bg-slate-800 disabled:text-slate-400";
 
 export function SchedulePortalPage(): JSX.Element {
   const [query, setQuery] = useState("");
@@ -47,22 +47,23 @@ export function SchedulePortalPage(): JSX.Element {
   const entry = (dayName: string, period: number) => timetable?.entries.find((item) => item.day === dayName && item.periodNumber === period);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Link to="/" className="flex items-center gap-2 text-sm font-semibold"><span className="grid h-7 w-7 place-items-center rounded-lg bg-indigo-600 text-xs font-bold text-white">E</span>EduSync</Link>
-          <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900"><ArrowLeft className="h-4 w-4" />Home</Link>
+    <div className="classsync-dark-page min-h-screen bg-[#080b17]">
+      <header className="sticky top-0 z-20 border-b border-slate-700 bg-[#0b1020]/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+          <Link to="/" className="flex items-center gap-2.5 text-sm font-bold text-white"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#5845d6] text-white shadow-md shadow-black/25"><GraduationCap className="h-5 w-5" /></span>ClassSync</Link>
+          <Link to="/" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"><ArrowLeft className="h-4 w-4" />Home</Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-5 px-6 py-8">
+      <main className="mx-auto max-w-5xl space-y-5 px-4 py-8 sm:px-6 sm:py-10">
         <div className="no-print">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Class schedule</h1>
-          <p className="mt-1 text-sm text-slate-600">Read-only timetable for students and parents. No sign-in needed.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-300">Public school view</p>
+          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-white">Class schedule</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-300">Read-only timetable for students and parents. No sign-in needed.</p>
         </div>
 
-        <section className="no-print grid gap-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:grid-cols-3">
-          <label className="relative text-xs font-medium text-slate-600">School
+        <section className="no-print grid gap-4 rounded-2xl border border-slate-700 bg-[#111729] p-4 shadow-[0_12px_34px_rgba(0,0,0,0.28)] sm:grid-cols-3 sm:p-5">
+          <label className="relative text-sm font-semibold text-slate-200">School
             <input value={query} onChange={(event) => { setQuery(event.target.value); setSchool(null); }} placeholder="Search school or city" className={fieldClass} />
             {schools.length > 0 ? (
               <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-md">
@@ -74,13 +75,13 @@ export function SchedulePortalPage(): JSX.Element {
               </div>
             ) : null}
           </label>
-          <label className="text-xs font-medium text-slate-600">Select Grade (6 to 12)
+          <label className="text-sm font-semibold text-slate-200">Select grade (6 to 12)
             <select className={fieldClass} disabled={!school} value={grade} onChange={(event) => { setGrade(event.target.value ? Number(event.target.value) : ""); setSection(""); }}>
               <option value="">Grade</option>
               {grades.map((item) => <option key={item} value={item}>Grade {item}</option>)}
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-600">Select Section
+          <label className="text-sm font-semibold text-slate-200">Select section
             <select className={fieldClass} disabled={grade === ""} value={section} onChange={(event) => setSection(event.target.value)}>
               <option value="">Section</option>
               {sections.map((item) => <option key={item} value={item}>Section {item}</option>)}
@@ -95,7 +96,7 @@ export function SchedulePortalPage(): JSX.Element {
 
         {timetable && timetable.entries.length > 0 ? (
           <section className="print-area rounded-xl border border-slate-200/80 bg-white shadow-sm">
-            <div className="print-header"><strong>EduSync · Class {timetable.class.grade}-{timetable.class.section} weekly timetable</strong><span>{school?.name}</span></div>
+            <div className="print-header"><strong>ClassSync · Class {timetable.class.grade}-{timetable.class.section} weekly timetable</strong><span>{school?.name}</span></div>
             <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-3">
               <div role="tablist" aria-label="Day" className="flex gap-1 overflow-x-auto md:invisible">
                 {DAYS.map((name, index) => (

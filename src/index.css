@@ -5,26 +5,26 @@
 @tailwind utilities;
 
 :root {
-  --timely-bg: #eff6ff;
-  --timely-bg-2: #eef2ff;
-  --timely-card: rgba(255, 255, 255, 0.88);
-  --timely-border: rgba(148, 163, 184, 0.22);
-  --timely-ink: #0f172a;
+  --timely-bg: #f5f7fc;
+  --timely-bg-2: #eef0ff;
+  --timely-card: #ffffff;
+  --timely-border: #d9deea;
+  --timely-ink: #111827;
   --timely-muted: #475569;
-  --timely-accent: #2563eb;
-  --timely-accent-2: #7c3aed;
-  --timely-accent-3: #14b8a6;
+  --timely-accent: #442dc5;
+  --timely-accent-2: #312180;
+  --timely-accent-3: #0f766e;
 }
 
 @layer base {
   * { @apply border-slate-200; }
   html { scroll-behavior: smooth; }
-  body {
-    @apply min-w-[320px] bg-slate-50 font-sans text-slate-800 antialiased;
-  }
+  body { @apply min-w-[320px] bg-[#f5f7fc] font-sans text-slate-900 antialiased; }
   .dark body { @apply bg-slate-950 text-slate-100; }
   button, input, select { font: inherit; }
   button { @apply transition-all duration-200 ease-out; }
+  :focus-visible { @apply outline-none ring-4 ring-indigo-500/35 ring-offset-2 ring-offset-white; }
+  ::selection { background: #dcd6ff; color: #20135f; }
 }
 
 @layer components {
@@ -182,6 +182,130 @@
   animation: float-soft 4.5s ease-in-out infinite;
 }
 
+.classsync-dark-page {
+  color: #e2e8f0;
+  color-scheme: dark;
+  background-color: #080b17 !important;
+}
+
+.classsync-dark-page [class~="bg-white"],
+.classsync-dark-page [class~="bg-white/90"],
+.classsync-dark-page [class~="bg-white/95"] {
+  background-color: #111729 !important;
+}
+
+.classsync-dark-page [class~="bg-white/70"],
+.classsync-dark-page [class~="bg-slate-50"],
+.classsync-dark-page [class~="bg-slate-50/60"] {
+  background-color: #0c1323 !important;
+}
+
+.classsync-dark-page [class~="bg-slate-100"],
+.classsync-dark-page [class~="bg-slate-200"] {
+  background-color: #1a2438 !important;
+}
+
+.classsync-dark-page [class~="bg-indigo-50"],
+.classsync-dark-page [class~="bg-indigo-50/60"],
+.classsync-dark-page [class~="bg-indigo-100"] {
+  background-color: #28234a !important;
+}
+
+.classsync-dark-page [class~="bg-emerald-50"],
+.classsync-dark-page [class~="bg-emerald-100"] {
+  background-color: #102b2b !important;
+}
+
+.classsync-dark-page [class~="bg-amber-50"],
+.classsync-dark-page [class~="bg-amber-100"] {
+  background-color: #332716 !important;
+}
+
+.classsync-dark-page [class~="bg-rose-50"],
+.classsync-dark-page [class~="bg-rose-100"] {
+  background-color: #351e2b !important;
+}
+
+.classsync-dark-page [class~="bg-sky-50"],
+.classsync-dark-page [class~="bg-sky-100"] {
+  background-color: #10283a !important;
+}
+
+.classsync-dark-page [class~="bg-violet-50"],
+.classsync-dark-page [class~="bg-violet-100"] {
+  background-color: #27213f !important;
+}
+
+.classsync-dark-page [class~="border-slate-100"],
+.classsync-dark-page [class~="border-slate-200"],
+.classsync-dark-page [class~="border-slate-300"] {
+  border-color: #2b354a !important;
+}
+
+.classsync-dark-page [class~="text-slate-950"],
+.classsync-dark-page [class~="text-slate-900"],
+.classsync-dark-page [class*="text-[#111827]"],
+.classsync-dark-page [class*="text-[#121824]"] {
+  color: #f8fafc !important;
+}
+
+.classsync-dark-page [class~="text-slate-800"],
+.classsync-dark-page [class~="text-slate-700"],
+.classsync-dark-page [class~="text-slate-600"] {
+  color: #cbd5e1 !important;
+}
+
+.classsync-dark-page [class~="text-slate-500"],
+.classsync-dark-page [class~="text-slate-400"] {
+  color: #94a3b8 !important;
+}
+
+.classsync-dark-page [class~="text-indigo-800"],
+.classsync-dark-page [class~="text-indigo-700"],
+.classsync-dark-page [class~="text-indigo-600"] {
+  color: #c4b5fd !important;
+}
+
+.classsync-dark-page [class~="text-emerald-800"],
+.classsync-dark-page [class~="text-emerald-700"],
+.classsync-dark-page [class~="text-emerald-600"] {
+  color: #86efac !important;
+}
+
+.classsync-dark-page [class~="text-amber-800"],
+.classsync-dark-page [class~="text-amber-700"],
+.classsync-dark-page [class~="text-amber-600"] {
+  color: #fcd34d !important;
+}
+
+.classsync-dark-page [class~="text-rose-800"],
+.classsync-dark-page [class~="text-rose-700"],
+.classsync-dark-page [class~="text-rose-600"] {
+  color: #fda4af !important;
+}
+
+.classsync-dark-page [class~="text-sky-800"],
+.classsync-dark-page [class~="text-sky-700"],
+.classsync-dark-page [class~="text-sky-600"] {
+  color: #7dd3fc !important;
+}
+
+.classsync-dark-page [class~="text-violet-800"],
+.classsync-dark-page [class~="text-violet-700"],
+.classsync-dark-page [class~="text-violet-600"] {
+  color: #c4b5fd !important;
+}
+
+.classsync-dark-page input::placeholder {
+  color: #8290a7;
+  opacity: 1;
+}
+
+.classsync-dark-page option {
+  color: #e2e8f0;
+  background-color: #111729;
+}
+
 @media print {
   .no-print { display: none !important; }
   .print-only { display: block !important; }
@@ -189,6 +313,14 @@
   .panel { box-shadow: none; border-color: #cbd5e1; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 /* Staffroom noticeboard export: strip chrome, leave a bordered A4 matrix with a branded header. */
 .print-header { display: none; }
