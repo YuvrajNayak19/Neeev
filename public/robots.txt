@@ -1,8 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /app
-Disallow: /auth
-Disallow: /settings
+Disallow: /admin
+Disallow: /teacher
 Disallow: /student
-
-Sitemap: https://timelysub.vercel.app/sitemap.xml
+Disallow: /account

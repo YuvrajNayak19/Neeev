@@ -37,7 +37,7 @@ app.use(
 );
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "timely-api" });
+  res.json({ status: "ok", service: "classsync-api" });
 });
 
 app.use("/api/v1/auth", authRoutes);

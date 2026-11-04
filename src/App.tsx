@@ -21,10 +21,8 @@ import { isPathAllowedForRole, type AppRole } from "./lib/access";
 import { appRoleFromUser, getCurrentUser, login as loginWithDatabase, registerSchoolAccount, registerForRole, searchSchools, getPublicClasses, verifyOtp, type PublicSchool, type PublicClassSection } from "./lib/auth-api";
 
 import { LandingPage } from "./components/public/landing-page";
-import { AdminDashboardContent } from "./components/admin/admin-dashboard";
 import { SchedulePortalPage } from "./components/public/schedule-portal";
 
-const DesignSystemPage = lazy(() => import("./components/design-system/design-system-page").then((module) => ({ default: module.DesignSystemPage })));
 
 type FeatureCard = {
   title: string;
@@ -415,7 +413,7 @@ function RoleDashboard({ role, title, subtitle, status = "Live and synced", chil
 function AdminDashboardPage() {
   return (
     <RoleDashboard role="admin" title="Command dashboard" subtitle="Today's faculty, absences and substitution coverage at a glance.">
-      <AdminDashboardContent />
+      <ComingSoonCard description="The redesigned dashboard is on its way." />
     </RoleDashboard>
   );
 }
@@ -612,7 +610,6 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/design" element={<Suspense fallback={<main className="min-h-screen bg-[#f7f8fa]" />}><DesignSystemPage /></Suspense>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterSchoolPage />} />
         <Route path="/schedule" element={<SchedulePortalPage />} />

@@ -81,12 +81,12 @@ async function issueOtp(email: string, purpose: RegistrationPurpose, payload: Re
   await Otp.deleteMany({ email, purpose });
   await Otp.create({ email, purpose, codeHash: await bcrypt.hash(code, 10), payload, expiresAt: new Date(Date.now() + 10 * 60_000) });
   if (process.env.NODE_ENV !== "production" || process.env.EMAIL_PROVIDER === "console") {
-    console.info(`[EduSync OTP] ${email} (${purpose}): ${code}`);
+    console.info(`[ClassSync OTP] ${email} (${purpose}): ${code}`);
   } else if (process.env.EMAIL_PROVIDER === "resend" && process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [email], subject: "Your EduSync verification code", text: `Your verification code is ${code}. It expires in 10 minutes.` }),
+      body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [email], subject: "Your ClassSync verification code", text: `Your verification code is ${code}. It expires in 10 minutes.` }),
     });
     if (!response.ok) throw new Error("The email provider could not send the verification code.");
   } else {
