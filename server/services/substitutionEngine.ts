@@ -41,7 +41,8 @@ export async function runSubstitutionDraft(schoolId: string, date: string, reset
       : absence.affectedPeriods;
     for (const slot of slots.filter((entry) => String(entry.teacherId) === String(absence.teacherId) && affected.includes(entry.periodNumber))) {
       const existing = previous.find((entry) => String(entry.classSectionId) === String(slot.classSectionId) && entry.periodNumber === slot.periodNumber);
-      if (existing?.isManualOverride && !reset) { outputs.push(existing); continue; }
+      // Keep cover the office already arranged: manual choices and confirmed (published) substitutes.
+      if ((existing?.isManualOverride || existing?.status === "PUBLISHED") && !reset) { outputs.push(existing); continue; }
       const schoolClass = classMap.get(String(slot.classSectionId));
       const subject = subjectMap.get(String(slot.subjectId));
       if (!schoolClass || !subject) continue;

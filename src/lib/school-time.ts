@@ -56,3 +56,12 @@ export function currentPeriod(now = new Date()): number | null {
 export function formatLongDate(date: Date): string {
   return date.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
 }
+
+/** "before" the first bell, "during" the school day, or "after" the last period ends. */
+export function schoolDayPhase(now = new Date()): "before" | "during" | "after" {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const toMinutes = (value: string) => { const [h, m] = value.split(":").map(Number); return h * 60 + m; };
+  if (minutes < toMinutes(PERIODS[0].start)) return "before";
+  if (minutes >= toMinutes(PERIODS[PERIODS.length - 1].end)) return "after";
+  return "during";
+}

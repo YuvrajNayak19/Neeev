@@ -1,23 +1,28 @@
 export type AppRole = "admin" | "teacher" | "student";
-export type RouteAccess = "public" | AppRole;
+/** "auth" = any signed-in role. */
+export type RouteAccess = "public" | "auth" | AppRole;
 
 const routes: Record<string, RouteAccess> = {
   "/": "public",
   "/login": "public",
+  "/register": "public",
   "/schedule": "public",
+  "/privacy": "public",
+  "/terms": "public",
+  "/403": "public",
+  "/account": "auth",
   "/admin/dashboard": "admin",
   "/admin/timetable": "admin",
   "/admin/substitutions": "admin",
   "/admin/requests": "admin",
-  "/admin/complaints": "admin",
-  "/admin/setup": "admin",
+  "/admin/accounts": "admin",
+  "/admin/concerns": "admin",
   "/teacher/dashboard": "teacher",
   "/teacher/routine": "teacher",
   "/teacher/requests": "teacher",
   "/student": "student",
   "/student/weekly": "student",
-  "/student/complaints": "student",
-  "/403": "public",
+  "/student/concerns": "student",
 };
 
 export function getRouteAccess(path: string): RouteAccess {
@@ -26,10 +31,8 @@ export function getRouteAccess(path: string): RouteAccess {
 }
 
 export function isPathAllowedForRole(path: string, role?: AppRole | null): boolean {
-  if (!role) {
-    return getRouteAccess(path) === "public";
-  }
-
   const access = getRouteAccess(path);
-  return access === "public" || access === role;
+  if (access === "public") return true;
+  if (!role) return false;
+  return access === "auth" || access === role;
 }

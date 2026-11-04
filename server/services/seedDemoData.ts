@@ -317,6 +317,13 @@ export async function seedDemoData() {
     }
   }
 
+  // Put the demo student in the class with the most confirmed substitutes today, so the student view shows them.
+  const published = await DailySubstitution.find({ schoolId, date: today, status: "PUBLISHED" }).select("classSectionId").lean();
+  const perClass = new Map<string, number>();
+  published.forEach((row) => perClass.set(String(row.classSectionId), (perClass.get(String(row.classSectionId)) ?? 0) + 1));
+  const busiest = [...perClass.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (busiest) await Student.updateOne({ schoolId, admissionNumber: "A1042" }, { $set: { classSectionId: new mongoose.Types.ObjectId(busiest) } });
+
   // Requests from teachers
   const userOf = (name: string) => teacherUsers[teacherIndex(name)]._id;
   const inDays = (days: number) => isoDate(schoolDate(days));

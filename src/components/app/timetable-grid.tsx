@@ -26,6 +26,11 @@ type Props = {
   caption: string;
 };
 
+/** "6-A" → "Room 6-A"; named rooms like "Science Lab" are shown as they are. */
+function roomLabel(room: string) {
+  return /^\d/.test(room) ? `Room ${room}` : room;
+}
+
 function findEntry(entries: GridEntry[], day: string, period: number) {
   return entries.find((entry) => entry.day === day && entry.periodNumber === period);
 }
@@ -42,7 +47,7 @@ function CellBody({ entry, compact }: { entry: GridEntry; compact?: boolean }) {
       ) : entry.primary ? (
         <span className="mt-1 block truncate text-xs opacity-85">{entry.primary}</span>
       ) : null}
-      {entry.room && !compact ? <span className="mt-0.5 block truncate text-2xs opacity-70">Room {entry.room}</span> : null}
+      {entry.room && !compact ? <span className="mt-0.5 block truncate text-2xs opacity-70">{roomLabel(entry.room)}</span> : null}
     </>
   );
 }
@@ -53,7 +58,7 @@ function DetailLines({ entry, secondaryLabel }: { entry: GridEntry; secondaryLab
       <span className="block font-semibold">{entry.subject} · {entry.day}, period {entry.periodNumber}</span>
       <span className="block opacity-80">{periodTime(entry.periodNumber)}</span>
       {entry.primary ? <span className="block">{secondaryLabel}: {entry.primary}</span> : null}
-      {entry.room ? <span className="block">Room: {entry.room}</span> : null}
+      {entry.room ? <span className="block">Where: {roomLabel(entry.room)}</span> : null}
       {entry.substitute ? <span className="block">Substitute today: {entry.substitute}</span> : null}
       {entry.clash ? <span className="block text-peach-200">⚠ {entry.clash}</span> : null}
     </span>

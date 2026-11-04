@@ -3,10 +3,11 @@ export type SubjectFamily = "math" | "sci" | "eng" | "hin" | "sst" | "comp" | "a
 
 const RULES: Array<[RegExp, SubjectFamily]> = [
   [/math/i, "math"],
+  // Checked before "science" so "Social Science" isn't treated as Science.
+  [/social|history|geography|civics|economics|sst/i, "sst"],
   [/science|physics|chemistry|biology|evs/i, "sci"],
   [/english/i, "eng"],
   [/hindi|sanskrit/i, "hin"],
-  [/social|history|geography|civics|economics|sst/i, "sst"],
   [/computer|\bit\b|informatics|coding/i, "comp"],
   [/art|music|dance|craft/i, "art"],
   [/physical|\bpe\b|sport|yoga|games/i, "pe"],
