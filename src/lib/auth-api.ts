@@ -1,3 +1,4 @@
+import { getOfflineRole } from "@/demo/mode";
 import type { AppRole } from "./access";
 
 export interface AuthUser {
@@ -56,7 +57,24 @@ const API_BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? "").re
 
 const UNREACHABLE = "We can't reach ClassSync right now. Check your internet connection and try again.";
 
+const loadOfflineDemo = () => import("@/demo/offline");
+const isPublicRead = (path: string, options: RequestInit) => (options.method ?? "GET").toUpperCase() === "GET" && /^\/(auth\/public|timetable\/public)(\/|\?|$)/.test(path);
+
+/**
+ * Calls the API. While someone is exploring the in-browser sample school (no API reachable), the
+ * call is answered by src/demo/offline.ts instead; public pages also fall back to it.
+ */
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if (getOfflineRole()) return (await loadOfflineDemo()).offlineRequest<T>(path, options);
+  try {
+    return await networkRequest<T>(path, options);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 0 && isPublicRead(path, options)) return (await loadOfflineDemo()).offlineRequest<T>(path, options);
+    throw error;
+  }
+}
+
+async function networkRequest<T>(path: string, options: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}/api/v1${path}`, {
@@ -92,8 +110,19 @@ export function homePathFor(role: AppRole | null): string {
 }
 
 export async function login(input: { identifier: string; password: string; role: "staff" | "student"; schoolId?: string }): Promise<AuthUser> {
-  const result = await request<{ user: AuthUser }>("/auth/login", { method: "POST", body: JSON.stringify(input) });
-  return result.user;
+  try {
+    const result = await request<{ user: AuthUser }>("/auth/login", { method: "POST", body: JSON.stringify(input) });
+    return result.user;
+  } catch (error) {
+    // No API (e.g. static hosting): the demo accounts still open the sample school in the browser.
+    if (!(error instanceof ApiError) || error.status !== 0) throw error;
+    const { offlineLogin } = await loadOfflineDemo();
+    try {
+      return offlineLogin(input);
+    } catch {
+      throw error;
+    }
+  }
 }
 
 export async function getMe(): Promise<Me | null> {

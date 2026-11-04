@@ -10,6 +10,7 @@
     "start": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "build:server": "tsc -p tsconfig.server.json --noEmit",
+    "demo:capture": "tsx --import dotenv/config scripts/capture-demo.ts",
     "seed": "tsx --import dotenv/config server/seed.ts",
     "test": "vitest run",
     "preview": "vite preview",

@@ -27,6 +27,8 @@ Port 4000 already taken? Run `API_PORT=4100 npm run dev` and the dev proxy follo
 
 The demo school is rebuilt on every API start, so it always opens on a realistic "today": three teachers absent, most cover arranged, two periods still needing a teacher, four requests and four sign-ups waiting.
 
+**Without an API (static hosting such as Lovable):** the demo buttons still work. When no API answers, the app opens a recorded copy of the sample school that runs in the browser (`src/demo/`). Visitors' changes stay in their browser until they sign out. After changing the seed or the read models, refresh the recording with `npm run demo:capture`.
+
 ## What's inside
 
 | Screen | What it does |
@@ -65,6 +67,7 @@ npm run typecheck  # client and server
 npm run lint       # ESLint for src and server
 npm run test       # Vitest
 npm run seed       # rebuild the demo school
+npm run demo:capture  # re-record the in-browser sample school (src/demo/snapshot.json)
 ```
 
 ## Environment
