@@ -18,7 +18,7 @@ export default {
       },
       fontSize: {
         // Fluid display sizes for marketing headings.
-        "display-xl": ["clamp(2.5rem, 5.6vw + 0.5rem, 4.75rem)", { lineHeight: "1.02", letterSpacing: "-0.025em" }],
+        "display-xl": ["clamp(2.4rem, 3.4vw + 0.7rem, 3.7rem)", { lineHeight: "1.02", letterSpacing: "-0.025em" }],
         "display-lg": ["clamp(2rem, 3.4vw + 0.6rem, 3.25rem)", { lineHeight: "1.08", letterSpacing: "-0.02em" }],
         "display-md": ["clamp(1.6rem, 1.8vw + 0.8rem, 2.25rem)", { lineHeight: "1.15", letterSpacing: "-0.015em" }],
         "2xs": ["0.6875rem", { lineHeight: "1rem" }],

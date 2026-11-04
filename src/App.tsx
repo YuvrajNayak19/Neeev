@@ -20,8 +20,9 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate 
 import { isPathAllowedForRole, type AppRole } from "./lib/access";
 import { appRoleFromUser, getCurrentUser, login as loginWithDatabase, registerSchoolAccount, registerForRole, searchSchools, getPublicClasses, verifyOtp, type PublicSchool, type PublicClassSection } from "./lib/auth-api";
 
-import { LandingPage } from "./components/public/landing-page";
-import { SchedulePortalPage } from "./components/public/schedule-portal";
+import { LandingPage } from "./pages/landing-page";
+import { LegalPage } from "./pages/legal-page";
+import { SchedulePage } from "./pages/schedule-page";
 
 
 type FeatureCard = {
@@ -612,7 +613,9 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterSchoolPage />} />
-        <Route path="/schedule" element={<SchedulePortalPage />} />
+        <Route path="/schedule" element={<SchedulePage />} />
+        <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+        <Route path="/terms" element={<LegalPage kind="terms" />} />
 
         <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/timetable" element={<ProtectedRoute role="admin"><RoleDashboard role="admin" title="Master timetable" subtitle="Review the published weekly class routine." status="Coming soon"><ComingSoonCard description="The timetable shown in the previous preview was sample data. Live timetable editing and publishing are not connected in this demo." /></RoleDashboard></ProtectedRoute>} />

@@ -1,37 +1,52 @@
-export type SubjectCategory = "stem" | "humanities" | "elective" | "pe" | "other";
+/** Subject → colour family. Classes resolve to tokens defined in src/index.css. */
+export type SubjectFamily = "math" | "sci" | "eng" | "hin" | "sst" | "comp" | "art" | "pe" | "other";
 
-const STEM = /math|science|physics|chemistry|biology/i;
-const HUMANITIES = /english|hindi|history|social|geography|civics|economics/i;
-const ELECTIVE = /computer|\bit\b|informatics/i;
-const PE = /physical|\bpe\b|sport|yoga/i;
+const RULES: Array<[RegExp, SubjectFamily]> = [
+  [/math/i, "math"],
+  [/science|physics|chemistry|biology|evs/i, "sci"],
+  [/english/i, "eng"],
+  [/hindi|sanskrit/i, "hin"],
+  [/social|history|geography|civics|economics|sst/i, "sst"],
+  [/computer|\bit\b|informatics|coding/i, "comp"],
+  [/art|music|dance|craft/i, "art"],
+  [/physical|\bpe\b|sport|yoga|games/i, "pe"],
+];
 
-export function subjectCategory(name?: string | null): SubjectCategory {
+export function subjectFamily(name?: string | null): SubjectFamily {
   if (!name) return "other";
-  if (PE.test(name)) return "pe";
-  if (ELECTIVE.test(name)) return "elective";
-  if (STEM.test(name)) return "stem";
-  if (HUMANITIES.test(name)) return "humanities";
-  return "other";
+  return RULES.find(([pattern]) => pattern.test(name))?.[1] ?? "other";
 }
 
-/** Left-border accent + faint tint per subject family. */
-export const SUBJECT_ACCENT: Record<SubjectCategory, string> = {
-  stem: "border-l-4 border-l-sky-500 bg-sky-50/30",
-  humanities: "border-l-4 border-l-amber-500 bg-amber-50/30",
-  elective: "border-l-4 border-l-violet-500 bg-violet-50/30",
-  pe: "border-l-4 border-l-emerald-500 bg-emerald-50/30",
-  other: "border-l-4 border-l-slate-300 bg-slate-50/40",
+/** Background + text classes per family (kept literal so Tailwind can see them). */
+export const SUBJECT_CLASSES: Record<SubjectFamily, { cell: string; dot: string; text: string }> = {
+  math: { cell: "bg-subject-math-bg text-subject-math", dot: "bg-subject-math", text: "text-subject-math" },
+  sci: { cell: "bg-subject-sci-bg text-subject-sci", dot: "bg-subject-sci", text: "text-subject-sci" },
+  eng: { cell: "bg-subject-eng-bg text-subject-eng", dot: "bg-subject-eng", text: "text-subject-eng" },
+  hin: { cell: "bg-subject-hin-bg text-subject-hin", dot: "bg-subject-hin", text: "text-subject-hin" },
+  sst: { cell: "bg-subject-sst-bg text-subject-sst", dot: "bg-subject-sst", text: "text-subject-sst" },
+  comp: { cell: "bg-subject-comp-bg text-subject-comp", dot: "bg-subject-comp", text: "text-subject-comp" },
+  art: { cell: "bg-subject-art-bg text-subject-art", dot: "bg-subject-art", text: "text-subject-art" },
+  pe: { cell: "bg-subject-pe-bg text-subject-pe", dot: "bg-subject-pe", text: "text-subject-pe" },
+  other: { cell: "bg-subject-other-bg text-subject-other", dot: "bg-subject-other", text: "text-subject-other" },
 };
 
-export const PERIODS = [
-  { number: 1, start: "08:20 AM", end: "09:00 AM" },
-  { number: 2, start: "09:00 AM", end: "09:40 AM" },
-  { number: 3, start: "09:40 AM", end: "10:20 AM" },
-  { number: 4, start: "10:20 AM", end: "11:00 AM" },
-  { number: 5, start: "11:20 AM", end: "12:00 PM" },
-  { number: 6, start: "12:00 PM", end: "12:40 PM" },
-  { number: 7, start: "12:40 PM", end: "01:20 PM" },
-  { number: 8, start: "01:20 PM", end: "02:00 PM" },
-] as const;
+export function subjectClasses(name?: string | null) {
+  return SUBJECT_CLASSES[subjectFamily(name)];
+}
 
-export const LUNCH = { start: "11:00 AM", end: "11:20 AM" } as const;
+/** Short label for tight cells, e.g. "Social Science" → "SST". */
+export function subjectShort(name?: string | null): string {
+  if (!name) return "—";
+  const map: Record<string, string> = {
+    mathematics: "Maths",
+    "social science": "SST",
+    "physical education": "PE",
+    computer: "Computer",
+    science: "Science",
+    english: "English",
+    hindi: "Hindi",
+    art: "Art",
+    sanskrit: "Sanskrit",
+  };
+  return map[name.toLowerCase()] ?? name;
+}
